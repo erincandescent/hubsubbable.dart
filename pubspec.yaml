@@ -1,0 +1,7 @@
+name: hubsubbable
+description: A web application
+dependencies:
+  http: any
+  logging: any
+  shelf: any
+  shelf_route: any
