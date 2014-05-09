@@ -5,8 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_route/shelf_route.dart';
 
-import 'dart:convert';
-
 var _l = new Logger("HubSubbable");
 
 class _Subscription {

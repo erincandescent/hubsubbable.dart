@@ -1,7 +1,10 @@
 name: hubsubbable
-description: A web application
+version: 0.1.0
+author: Owen Shepherd <*@owenshepherd.net>
+description: A PubSubHubub Receiver
+homepage: https://github.com/oshepherd/hubsubbable.dart
 dependencies:
-  http: any
-  logging: any
-  shelf: any
-  shelf_route: any
+  http: '>=0.10.0 <0.11.0'
+  logging: '>=0.9.1 <0.10.0'
+  shelf: '>=0.5.1 <0.6.0'
+  shelf_route: '>=0.5.0 <0.6.0'
