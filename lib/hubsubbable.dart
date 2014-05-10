@@ -12,6 +12,7 @@ class _Subscription {
   SubscriptionEndpoint endpoint;
   Uri uri, hubUri, callbackUri;
   Timer refreshTimer;
+  final int key;
   
   sendSubscribe() {
     refreshTimer = new Timer(new Duration(minutes: 1), sendSubscribe);
@@ -20,7 +21,7 @@ class _Subscription {
     
     var cli = new http.Client();
     var path = new List<String>.from(endpoint._selfUrl.pathSegments);
-    path.add(uri.toString());
+    path.add(key.toRadixString(16));
     
     callbackUri = endpoint._selfUrl.resolveUri(
         new Uri(pathSegments: path));
@@ -46,13 +47,14 @@ class _Subscription {
     _l.info("Subscription ${uri} dropped: ${reason}");
         
     endpoint._subscriptions.remove(uri);
+    endpoint._keyedSubscriptions.remove(key);
     refreshTimer.cancel();
         
     stream.addError(new Exception(reason));
     stream.close();
   }
   
-  _Subscription(this.endpoint, this.uri, this.hubUri) {
+  _Subscription(this.endpoint, this.key, this.uri, this.hubUri) {
     sendSubscribe();
   }
   
@@ -118,15 +120,21 @@ class SubscriptionEndpoint {
   final Uri    host;
   final String path;
   final Uri    _selfUrl;
-  Map<Uri, _Subscription> _subscriptions = {};
+  int          _key;
+  Map<Uri, _Subscription> _subscriptions      = {};
+  Map<int, _Subscription> _keyedSubscriptions = {};
   
   SubscriptionEndpoint(host, path)
       : host=host, path=path
-      , _selfUrl = host.resolve(path);
+      , _selfUrl = host.resolve(path)
+      , _key = new DateTime.now().millisecondsSinceEpoch;
   
   Stream<String> subscribe(Uri uri, Uri hub) {
     if(!_subscriptions.containsKey(uri)) {
-      _subscriptions[uri] = new _Subscription(this, uri, hub);
+      var key = _key++;
+      var sub = new _Subscription(this, key, uri, hub);
+      _subscriptions[uri] = sub;
+      _keyedSubscriptions[key] = sub; 
     }
     
     return _subscriptions[uri].stream.stream.asBroadcastStream();
@@ -138,11 +146,11 @@ class SubscriptionEndpoint {
       return new Response.notFound("Bad path");
     }
     
-    Uri topic = Uri.parse(path[0]);
-    if(topic != null && _subscriptions.containsKey(topic)) {
-      return _subscriptions[topic].onMessage(req);
+    int key = int.parse(path[0], radix: 16);
+    if(key != null && _keyedSubscriptions.containsKey(key)) {
+      return _keyedSubscriptions[key].onMessage(req);
     } else {
-      _l.warning("Bad topic ${topic} ${req.requestedUri}");
+      _l.warning("Bad key ${key} ${req.requestedUri}");
       return new Response.notFound("Bad topic");
     }
   }
